@@ -2,8 +2,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import uuid
 import pandas as pd
-
-from src.constants import COMM_MODE_MAP, REQUEST_TYPE_MAP, PART_ID_BY_PREFIX
+from src.config import COMM_MODE_MAP, REQUEST_TYPE_MAP, PART_ID_BY_PREFIX
 from src.lookups import ensure_os_exists, ensure_manager_exists_exact
 
 
