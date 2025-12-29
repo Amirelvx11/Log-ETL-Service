@@ -11,14 +11,15 @@ def _require_env(key: str) -> str:
         raise RuntimeError(f"Missing required env var: {key}")
     return value
 
-# Required ENV variables
-SOURCE_DB = _require_env("SOURCE_DB") # pyodbc SQLAlchemy URI
-TARGET_DB = _require_env("TARGET_DB") # pyodbc SQLAlchemy URI
-USER_GUID = _require_env("USER_GUID") # MUST be valid in system.User.Id
+# REQUIRED ENV 
+SOURCE_DB = _require_env("SOURCE_DB")   # SQLAlchemy URI (MySQL)
+TARGET_DB = _require_env("TARGET_DB")   # SQLAlchemy URI (MSSQL)
+USER_GUID = _require_env("USER_GUID")   # MUST exist in system.User.Id
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "2000")) #ensure no limitation based on mssql insert
 
-# Engines (MySQL and MSSQL)
-src_engine = create_engine(SOURCE_DB, pool_pre_ping=True)
-dst_engine = create_engine(
+# Engines (MySQL-source and MSSQL-target)
+mysql_engine = create_engine(SOURCE_DB, pool_pre_ping=True)
+mssql_engine = create_engine(
     TARGET_DB,
     pool_pre_ping=True,
     fast_executemany=True,
