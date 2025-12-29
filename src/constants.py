@@ -1,0 +1,16 @@
+# FIXED GUIDS (based on target db fields)
+PART_AF70 = "A3925DD2-F7C3-4E27-B487-E547F8F980E2"
+PART_AF75 = "B159B8DA-AD61-4C25-97C8-C82CF7955D06"
+
+
+# MAPPINGS 
+COMMODE_MAP = {
+    0: 4,  # 4G
+    1: 1,  # GPRS
+    2: 2,  # WIFI
+}
+
+REQUEST_TYPE_MAP = {
+    0 : "RUA",
+    1 : "RAL",
+}
