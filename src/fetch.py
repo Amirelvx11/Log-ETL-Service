@@ -1,7 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-
 from src.config import mysql_engine, mssql_engine, BATCH_SIZE
 
 FETCH_SQL = text("""
@@ -25,7 +24,7 @@ LIMIT :limit
 """)
 
 
-def fetch_batch(last_id: int) -> pd.DataFrame:
+def fetch_source_rows(last_id: int) -> pd.DataFrame:
     try:
         with mysql_engine.connect() as conn:
             return pd.read_sql(
