@@ -28,15 +28,11 @@ LIMIT :limit
 def fetch_batch(last_id: int) -> pd.DataFrame:
     try:
         with mysql_engine.connect() as conn:
-            df = pd.read_sql(
+            return pd.read_sql(
                 FETCH_SQL,
                 conn,
-                params={
-                    "last_id": last_id,
-                    "limit": BATCH_SIZE,
-                },
+                params={"last_id": last_id, "limit": BATCH_SIZE},
             )
-        return df
     except SQLAlchemyError as e:
         print(f"[fetch_batch] error: {e}")
         return pd.DataFrame()
@@ -49,9 +45,7 @@ def get_last_tms_log_id() -> int:
 
     try:
         with mssql_engine.connect() as conn:
-            val = conn.execute(sql).scalar_one()
-            return int(val)
-
+            return int(conn.execute(sql).scalar_one())
     except SQLAlchemyError as e:
         print(f"[get_last_tms_log_id] error: {e}")
         return 0
