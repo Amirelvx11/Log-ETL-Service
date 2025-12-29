@@ -4,11 +4,13 @@ import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from src.config import mssql_engine, USER_GUID
+from src.config import mssql_engine
+from src.constants import USER_GUID
 
 
 # ---------- NORMALIZATION ----------
 def normalize_os(value: str) -> str:
+    """Remove trailing letter: V1.2A -> V1.2"""
     if not value:
         return ""
     value = value.strip().upper()
@@ -30,7 +32,7 @@ def ensure_os_exists(raw: str) -> str | None:
     if not title:
         return None
 
-    sql_sel = "SELECT Id FROM Hamon.mfu.OperatingSystem WHERE UPPER(Title) = :t"
+    sql_sel = """SELECT Id FROM Hamon.mfu.OperatingSystemWHERE UPPER(Title) = :t"""
 
     with mssql_engine.begin() as conn:
         row = conn.execute(text(sql_sel), {"t": title}).fetchone()
@@ -38,31 +40,30 @@ def ensure_os_exists(raw: str) -> str | None:
             return row[0]
 
         new_id = str(uuid.uuid4()).upper()
-        sql_ins = """
-        INSERT INTO Hamon.mfu.OperatingSystem
-        (Id, Title, IsActive, CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, OwnerId, Description)
-        VALUES (:id, :title, 1, :u, GETDATE(), :u, GETDATE(), :u, NULL)
-        """
         conn.execute(
-            text(sql_ins),
-            {
-                "id": new_id,
-                "title": title,
-                "u": USER_GUID,
-            },
+            text("""
+            INSERT INTO Hamon.mfu.OperatingSystem
+            (Id, Title, IsActive, CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, OwnerId)
+            VALUES (:id, :t, 1, :u, GETDATE(), :u, GETDATE(), :u)
+            """),
+            {"id": new_id, "t": title, "u": USER_GUID},
         )
-        print(f"[OS] Inserted new OS: {title}")
+        print(f"[OS] inserted: {title}")
         return new_id
 
 
 # ---------- ENSURE MANAGER ----------
 def ensure_manager_exists(raw: str) -> str | None:
     exact = manager_exact(raw)
+    short = manager_short(raw)
+
     if not exact:
         return None
 
-    short = manager_short(raw)
-    sql_sel = "SELECT Id FROM Hamon.mfu.Manager WHERE UPPER(Title) = :t"
+    sql_sel = """
+    SELECT Id FROM Hamon.mfu.Manager
+    WHERE UPPER(Title) = :t
+    """
 
     with mssql_engine.begin() as conn:
         r1 = conn.execute(text(sql_sel), {"t": exact}).fetchone()
@@ -74,34 +75,28 @@ def ensure_manager_exists(raw: str) -> str | None:
             return r2[0]
 
         new_id = str(uuid.uuid4()).upper()
-        sql_ins = """
-        INSERT INTO Hamon.mfu.Manager
-        (Id, Title, IsActive, CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, OwnerId, Description)
-        VALUES (:id, :title, 1, :u, GETDATE(), :u, GETDATE(), :u, NULL)
-        """
         conn.execute(
-            text(sql_ins),
-            {
-                "id": new_id,
-                "title": exact,
-                "u": USER_GUID,
-            },
+            text("""
+            INSERT INTO Hamon.mfu.Manager
+            (Id, Title, IsActive, CreatedBy, CreatedOn, ModifiedBy, ModifiedOn, OwnerId)
+            VALUES (:id, :t, 1, :u, GETDATE(), :u, GETDATE(), :u)
+            """),
+            {"id": new_id, "t": exact, "u": USER_GUID},
         )
-        print(f"[Manager] Inserted new Manager: {exact}")
+        print(f"[Manager] inserted: {exact}")
         return new_id
 
 
 # ---------- PRELOAD MAP ----------
 def fetch_lookup_maps():
+    """Load OS & Manager tables into memory for fast lookup."""
     try:
         with mssql_engine.connect() as conn:
             os_df = pd.read_sql(
-                "SELECT Id, Title FROM Hamon.mfu.OperatingSystem WITH (NOLOCK)",
-                conn,
+                "SELECT Id, Title FROM Hamon.mfu.OperatingSystem WITH (NOLOCK)", conn
             )
             mgr_df = pd.read_sql(
-                "SELECT Id, Title FROM Hamon.mfu.Manager WITH (NOLOCK)",
-                conn,
+                "SELECT Id, Title FROM Hamon.mfu.Manager WITH (NOLOCK)", conn
             )
 
         os_map = {
