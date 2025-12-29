@@ -39,8 +39,11 @@ def transform_rows(df: pd.DataFrame, user_guid: str) -> List[Dict[str, Any]]:
 
             mgr_raw = r.get("vc_device_version") or r.get("vs_device_version")
             mgr_id = ensure_manager_exists_exact(mgr_raw)
-
+            
+            if not created_on:
+                raise ValueError("Invalid start_time")            
             created_on = parse_datetime(r.get("start_time"))
+            
             part_id = resolve_part_id(r.get("terminal"))
             if not part_id:
                 raise ValueError("Unknown terminal prefix")
