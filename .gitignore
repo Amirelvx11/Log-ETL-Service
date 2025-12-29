@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+__pypackages__/
+
+# Packaging / Build
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.pytype/
+.pyre/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+htmlcov/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
+*.crt
+
+# Logs & Runtime Artifacts
+logs/
+*.log
+*.log.*
+cron.log
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.*.yml
+*.tar
+
+# Databases / ETL Artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+*.dump
+*.sql
+data/
+tmp/
+cache/
+
+# IDEs & Editors
+.idea/
+.vscode/
+.vscode/*
+*.swp
+*.swo
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# CI / CD
+.pytest_cache/
+.cache/
+pip-log.txt
+
+# Misc
+.pypirc
