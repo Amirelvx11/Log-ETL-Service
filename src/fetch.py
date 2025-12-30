@@ -27,11 +27,22 @@ LIMIT :limit
 def fetch_source_rows(last_id: int) -> pd.DataFrame:
     try:
         with mysql_engine.connect() as conn:
-            return pd.read_sql(
+            df = pd.read_sql(
                 FETCH_SQL,
                 conn,
                 params={"last_id": last_id, "limit": BATCH_SIZE},
             )
+
+        if not df.empty:
+            print(
+                f"[fetch] rows={len(df)} "
+                f"id_min={df['id'].min()} "
+                f"id_max={df['id'].max()}"
+            )
+            assert df["id"].is_monotonic_increasing, "[fetch] id order broken"
+
+        return df
+    
     except SQLAlchemyError as e:
         print(f"[fetch_batch] error: {e}")
         return pd.DataFrame()
