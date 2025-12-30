@@ -1,9 +1,37 @@
 from datetime import datetime
 from typing import List, Dict, Any
 import uuid
+import math
 import pandas as pd
+from collections import Counter
 from src.config import COMM_MODE_MAP, REQUEST_TYPE_MAP, PART_ID_BY_PREFIX
 from src.lookups import ensure_os_exists, ensure_manager_exists_exact
+
+error_stats = Counter()
+
+#-----------------------HELPER METHODS-----------------------#
+
+def parse_datetime(value) -> datetime:
+    if value is None or pd.isna(value):
+        raise ValueError("start_time is NULL/NaN")
+
+    if isinstance(value, datetime):
+        return value
+
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value.strip(), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            raise ValueError(f"Invalid start_time string: {value}")
+
+    raise ValueError(f"Unsupported start_time type: {type(value)}")
+
+
+def clean_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    for k, v in row.items():
+        if isinstance(v, float) and math.isnan(v):
+            row[k] = None
+    return row
 
 
 def resolve_part_id(terminal: str) -> str | None:
@@ -14,8 +42,9 @@ def resolve_part_id(terminal: str) -> str | None:
             return guid
     return None
 
+#-----------------------CORE TRANSFORM-----------------------#
 
-def transform_rows(df: pd.DataFrame, user_guid: str) -> List[Dict[str, Any]]:
+def transform_rows(df: pd.DataFrame, user_guid: str) -> pd.DataFrame:
     rows: List[Dict[str, Any]] = []
     errors = 0
 
@@ -23,19 +52,16 @@ def transform_rows(df: pd.DataFrame, user_guid: str) -> List[Dict[str, Any]]:
         try:
             os_id = ensure_os_exists(r.get("cos_device_version"))
 
-            mgr_raw = r.get("vc_device_version") or r.get("vs_device_version")
+            mgr_raw = r.get("vc_device_version")
+            if not mgr_raw:
+                mgr_raw = r.get("vs_device_version")
+                
             mgr_id = ensure_manager_exists_exact(mgr_raw)
-                      
-            created_on = r.get("start_time")
-            if not isinstance(created_on, datetime):
-                raise ValueError("Invalid start_time") 
-            
+            created_on = parse_datetime(r.get("start_time"))
             part_id = resolve_part_id(r.get("terminal"))
-            if not part_id:
-                raise ValueError("Unknown terminal prefix")
 
-            rows.append(
-                {
+
+            row = {
                     "Id": str(uuid.uuid4()).upper(),
                     "IsActive": 1,
                     "CreatedBy": user_guid,
@@ -55,13 +81,18 @@ def transform_rows(df: pd.DataFrame, user_guid: str) -> List[Dict[str, Any]]:
                     "RequestType": REQUEST_TYPE_MAP.get(r.get("request_subject")),
                     "PartId": part_id,
                 }
-            )
+            rows.append(clean_row(row))
 
         except Exception as e:
             errors += 1
-            print(f"[transform] skip id={r.get('id')}: {e}")
+            error_stats[type(e).__name__] += 1
 
-    if errors:
-        print(f"[transform] skipped {errors} rows")
+            print(
+                f"[transform][skip] id={r.get('id')} "
+                f"error={type(e).__name__} msg={e}"
+            )
 
-    return rows
+    if error_stats:
+        print(f"[transform][errors] {dict(error_stats)}")
+
+    return pd.DataFrame(rows)
