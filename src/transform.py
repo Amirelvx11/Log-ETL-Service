@@ -5,6 +5,9 @@ from datetime import datetime
 from typing import List, Dict, Any
 from src.config import COMM_MODE_MAP, REQUEST_TYPE_MAP, PART_ID_BY_PREFIX
 from src.lookups import ensure_os_exists, ensure_manager_exists_exact
+from backend_toolkit.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 #-----------------------HELPER METHODS-----------------------#
@@ -47,7 +50,21 @@ def transform_rows(df: pd.DataFrame, user_guid: str) -> pd.DataFrame:
             if not mgr_raw:
                 mgr_raw = r.get("vs_device_version")
             mgr_id = ensure_manager_exists_exact(mgr_raw)
-            
+
+            conn_type = COMM_MODE_MAP.get(r.get("commode"))
+            if conn_type is None and r.get("commode") is not None:
+                logger.warning(
+                    "unknown commode value",
+                    extra={"value": r.get("commode")}
+                )
+
+            request_type = REQUEST_TYPE_MAP.get(r.get("request_subject"))
+            if request_type is None and r.get("request_subject") is not None:
+                logger.warning(
+                    "unknown request_subject value",
+                    extra={"value": r.get("request_subject")}
+                )
+                           
             row = {
                     "Id": str(uuid.uuid4()).upper(),
                     "IsActive": 1,
@@ -61,11 +78,11 @@ def transform_rows(df: pd.DataFrame, user_guid: str) -> pd.DataFrame:
                     "Terminal": r.get("terminal"),
                     "TerminalNumber": r.get("terminal_number"),
                     "BatteryVoltage": r.get("electricity"),
-                    "ConnectionType": COMM_MODE_MAP.get(r.get("commode")),
+                    "ConnectionType": conn_type,
                     "BaseStation": r.get("base_station"),
                     "ManagerVersionId": mgr_id,
                     "OsVersionId": os_id,
-                    "RequestType": REQUEST_TYPE_MAP.get(r.get("request_subject")),
+                    "RequestType": request_type,
                     "PartId": _resolve_part_id(r.get("terminal")),
                 }
             rows.append(_clean_nan(row))

@@ -1,6 +1,9 @@
 import pandas as pd
 from sqlalchemy import text
 from src.config import mysql_engine, BATCH_SIZE
+from backend_toolkit.logger import get_logger
+
+logger = get_logger(__name__)
 
 FETCH_SQL = text("""
 SELECT
@@ -24,11 +27,23 @@ LIMIT :limit
 
 
 def fetch_source_rows(last_id: int) -> pd.DataFrame:
+    try:
         with mysql_engine.connect() as conn:
-            return pd.read_sql(
+            df = pd.read_sql(
                 FETCH_SQL,
                 conn,
                 params={"last_id": last_id, "limit": BATCH_SIZE},
             )
 
-    
+        logger.info(
+            "fetched source rows",
+            extra={"last_tms_id": last_id, "row_count": len(df)},
+        )
+        return df
+
+    except Exception as exc:
+        logger.error(
+            "failed fetching source rows",
+            extra={"last_tms_id": last_id, "error": str(exc)},
+        )
+        raise
