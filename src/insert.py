@@ -1,5 +1,6 @@
-from typing import List, Dict, Any
+import pandas as pd
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from src.config import mssql_engine
 
 
@@ -21,21 +22,26 @@ VALUES
 """)
 
 
-def insert_rows(rows: List[Dict[str, Any]]) -> int:
-    if not rows:
+def insert_rows(df: pd.DataFrame) -> int:
+    if df.empty:
         return 0
+    try:
+        with mssql_engine.begin() as conn:
+            df.to_sql(
+                name="DeviceLog",
+                schema="mfu",
+                con=conn,
+                if_exists="append",
+                index=False,
+                chunksize=1000,
+            )
 
-    with mssql_engine.begin() as conn:
-        raw = conn.connection
-        cursor = raw.cursor()
-        cursor.fast_executemany = True
+        print(f"Inserted {len(df)} rows into DeviceLog")
+        return len(df)
 
-        cursor.executemany(
-            INSERT_SQL.text,
-            rows
-        )
-
-        return cursor.rowcount
+    except SQLAlchemyError as e:
+        print(f"Insert failed (rows={len(df)})")
+        raise
 
 
 def get_last_inserted_tms_id() -> int:
