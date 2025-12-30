@@ -22,6 +22,7 @@ mysql_engine = create_engine(SOURCE_DB, pool_pre_ping=True)
 mssql_engine = create_engine(
     TARGET_DB,
     pool_pre_ping=True,
+    fast_executemany=True,
     max_overflow=5,
     pool_timeout=5,
     pool_recycle=1800,
@@ -34,9 +35,9 @@ PART_ID_BY_PREFIX = {
 }
 
 COMM_MODE_MAP = {
-    0: 4,
-    1: 1,
-    2: 2,
+    "4G": 0,
+    "GPRS": 1,
+    "WIFI": 2,
 }
 
 REQUEST_TYPE_MAP = {
