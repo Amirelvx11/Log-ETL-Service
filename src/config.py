@@ -22,7 +22,6 @@ mysql_engine = create_engine(SOURCE_DB, pool_pre_ping=True)
 mssql_engine = create_engine(
     TARGET_DB,
     pool_pre_ping=True,
-    fast_executemany=True,
     max_overflow=5,
     pool_timeout=5,
     pool_recycle=1800,
