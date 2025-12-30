@@ -5,11 +5,12 @@ from src.config import mssql_engine, USER_GUID
 
 
 _OS_CACHE: dict[str, str] = {}
-_MANAGER_CACHE: dict[str, int] = {}
+_MANAGER_CACHE: dict[str, str] = {}
+
 
 # ---------------- OS ---------------- #
 
-def normalize_os_input(value: str) -> tuple[str, str]:
+def normalize_os(value: str) -> tuple[str, str]:
     v = value.strip().upper()
 
     if "|" in v:
@@ -20,31 +21,22 @@ def normalize_os_input(value: str) -> tuple[str, str]:
         return v, v
 
     base, suffix = m.groups()
-
-    if suffix == "A":
-        return base, base
-
-    return v, v
+    return (base, base) if suffix == "A" else (v, v)
 
 
 def ensure_os_exists(raw: str) -> str | None:
     if not raw:
         return None
 
-    lookup, insert_val = normalize_os_input(raw)
+    lookup, insert_val = normalize_os(raw)
     key = lookup.upper()
 
-    cached = _OS_CACHE.get(key)
-    if cached is not None:
-        return cached
+    if key in _OS_CACHE:
+        return _OS_CACHE[key]
 
     with mssql_engine.begin() as conn:
         row = conn.execute(
-            text("""
-                SELECT Id
-                FROM Hamon.mfu.OperatingSystem
-                WHERE UPPER(Title) = :t
-            """),
+            text("SELECT Id FROM Hamon.mfu.OperatingSystem WHERE UPPER(Title) = :t"),
             {"t": lookup},
         ).fetchone()
 
@@ -70,37 +62,30 @@ def ensure_os_exists(raw: str) -> str | None:
 
 # ---------------- MANAGER ---------------- #
 
-def normalize_manager_input(value: str) -> str | None:
+def normalize_manager(value: str) -> str | None:
     if not value:
         return None
 
     value = value.strip().upper()
-    if not value.startswith("V"):
-        return None
-
-    return value
-
-
-def extract_manager_numeric(value: str) -> str:
-    return re.sub(r"^[A-Z]+", "", value)
+    return value if value.startswith("V") else None
 
 
 def ensure_manager_exists_exact(raw: str) -> str | None:
-    normalized = normalize_manager_input(raw)
+    normalized = normalize_manager(raw)
     if not normalized:
         return None
-    numeric = extract_manager_numeric(raw)
 
     key = normalized.upper()
-    cached = _MANAGER_CACHE.get(key)
-    if cached is not None:
-        return cached
+
+    if key in _MANAGER_CACHE:
+        return _MANAGER_CACHE[key]
+
+    numeric = re.sub(r"^[A-Z]+", "", normalized)
 
     with mssql_engine.begin() as conn:
         row = conn.execute(
             text("""
-                SELECT Id
-                FROM Hamon.mfu.Manager
+                SELECT Id FROM Hamon.mfu.Manager
                 WHERE
                     UPPER(Title) = :raw
                     OR UPPER(Title) = :numeric
