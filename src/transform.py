@@ -6,17 +6,6 @@ from src.config import COMM_MODE_MAP, REQUEST_TYPE_MAP, PART_ID_BY_PREFIX
 from src.lookups import ensure_os_exists, ensure_manager_exists_exact
 
 
-# ---------------- Utilities ---------------- #
-
-def parse_datetime(value: str) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
-    except Exception:
-        return None
-
-
 def resolve_part_id(terminal: str) -> str | None:
     if not terminal:
         return None
@@ -26,22 +15,20 @@ def resolve_part_id(terminal: str) -> str | None:
     return None
 
 
-# ---------------- Core Transform ---------------- #
-
 def transform_rows(df: pd.DataFrame, user_guid: str) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     errors = 0
 
-    for _, r in df.iterrows():
+    for _, r in df.iterrows(): #for batch<10k is ok (default batch size:2000)
         try:
             os_id = ensure_os_exists(r.get("cos_device_version"))
 
             mgr_raw = r.get("vc_device_version") or r.get("vs_device_version")
             mgr_id = ensure_manager_exists_exact(mgr_raw)
                       
-            created_on = parse_datetime(r.get("start_time"))
-            if not created_on:
-                raise ValueError("Invalid start_time")  
+            created_on = r.get("start_time")
+            if not isinstance(created_on, datetime):
+                raise ValueError("Invalid start_time") 
             
             part_id = resolve_part_id(r.get("terminal"))
             if not part_id:
