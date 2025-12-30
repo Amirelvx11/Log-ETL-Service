@@ -1,73 +1,60 @@
-from datetime import datetime
-from typing import List, Dict, Any
 import uuid
 import math
 import pandas as pd
-from collections import Counter
+from datetime import datetime
+from typing import List, Dict, Any
 from src.config import COMM_MODE_MAP, REQUEST_TYPE_MAP, PART_ID_BY_PREFIX
 from src.lookups import ensure_os_exists, ensure_manager_exists_exact
 
-error_stats = Counter()
 
 #-----------------------HELPER METHODS-----------------------#
 
-def parse_datetime(value) -> datetime:
-    if value is None or pd.isna(value):
-        raise ValueError("start_time is NULL/NaN")
-
+def _parse_datetime(value) -> datetime:
     if isinstance(value, datetime):
         return value
 
     if isinstance(value, str):
-        try:
-            return datetime.strptime(value.strip(), "%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            raise ValueError(f"Invalid start_time string: {value}")
+        return datetime.strptime(value.strip(), "%Y-%m-%d %H:%M:%S")
 
-    raise ValueError(f"Unsupported start_time type: {type(value)}")
+    raise ValueError("Invalid start_time")
 
 
-def clean_row(row: Dict[str, Any]) -> Dict[str, Any]:
-    for k, v in row.items():
-        if isinstance(v, float) and math.isnan(v):
-            row[k] = None
-    return row
-
-
-def resolve_part_id(terminal: str) -> str | None:
+def _resolve_part_id(terminal: str) -> str | None:
     if not terminal:
         return None
+
     for prefix, guid in PART_ID_BY_PREFIX.items():
         if terminal.startswith(prefix):
             return guid
     return None
 
+
+def _clean_nan(row: dict[str, Any]) -> dict[str, Any]:
+    for k, v in row.items():
+        if isinstance(v, float) and math.isnan(v):
+            row[k] = None
+    return row
+
 #-----------------------CORE TRANSFORM-----------------------#
 
 def transform_rows(df: pd.DataFrame, user_guid: str) -> pd.DataFrame:
     rows: List[Dict[str, Any]] = []
-    errors = 0
 
-    for _, r in df.iterrows(): #for batch<10k is ok (default batch size:2000)
-        try:
+    for _, r in df.iterrows():
             os_id = ensure_os_exists(r.get("cos_device_version"))
 
             mgr_raw = r.get("vc_device_version")
             if not mgr_raw:
                 mgr_raw = r.get("vs_device_version")
-                
             mgr_id = ensure_manager_exists_exact(mgr_raw)
-            created_on = parse_datetime(r.get("start_time"))
-            part_id = resolve_part_id(r.get("terminal"))
-
-
+            
             row = {
                     "Id": str(uuid.uuid4()).upper(),
                     "IsActive": 1,
                     "CreatedBy": user_guid,
-                    "CreatedOn": created_on,
+                    "CreatedOn": _parse_datetime(r.get("start_time")),
                     "ModifiedBy": user_guid,
-                    "ModifiedOn": created_on,
+                    "ModifiedOn": _parse_datetime(r.get("start_time")),
                     "OwnerId": user_guid,
                     "TmsLogId": int(r["id"]),
                     "Tusn": r.get("serial"),
@@ -79,20 +66,8 @@ def transform_rows(df: pd.DataFrame, user_guid: str) -> pd.DataFrame:
                     "ManagerVersionId": mgr_id,
                     "OsVersionId": os_id,
                     "RequestType": REQUEST_TYPE_MAP.get(r.get("request_subject")),
-                    "PartId": part_id,
+                    "PartId": _resolve_part_id(r.get("terminal")),
                 }
-            rows.append(clean_row(row))
-
-        except Exception as e:
-            errors += 1
-            error_stats[type(e).__name__] += 1
-
-            print(
-                f"[transform][skip] id={r.get('id')} "
-                f"error={type(e).__name__} msg={e}"
-            )
-
-    if error_stats:
-        print(f"[transform][errors] {dict(error_stats)}")
+            rows.append(_clean_nan(row))
 
     return pd.DataFrame(rows)
