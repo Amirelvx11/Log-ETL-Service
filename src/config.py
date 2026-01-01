@@ -11,24 +11,27 @@ def _require_env(key: str) -> str:
     return value
 
 # REQUIRED ENV 
-SOURCE_DB = _require_env("SOURCE_DB")   # SQLAlchemy URI (MySQL)
-TARGET_DB = _require_env("TARGET_DB")   # SQLAlchemy URI (MSSQL)
-USER_GUID = _require_env("USER_GUID")   # MUST exist in system.User.Id
+SOURCE_DB = _require_env("SOURCE_DB")
+TARGET_DB = _require_env("TARGET_DB")
+USER_GUID = _require_env("USER_GUID")
 
-# OPTIONAL
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "10000")) #ensure that no limitation based on mssql and your RAM for insert
+# OPTIONAL (ensure that no limitation based on mssql and your RAM for insert)
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", "10000")) 
 
 # Engines (MySQL-source and MSSQL-target)
-mysql_engine = create_engine(SOURCE_DB, pool_pre_ping=True)
+mysql_engine = create_engine(
+    SOURCE_DB,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+)
 mssql_engine = create_engine(
     TARGET_DB,
     pool_pre_ping=True,
     fast_executemany=True,
     pool_size=5,
     max_overflow=5,
-    pool_timeout=5,
-    pool_recycle=1800,
-    connect_args={"timeout": 5, "LoginTimeout": 5},
+    pool_timeout=30,
+    pool_recycle=3600,
 )
 
 
