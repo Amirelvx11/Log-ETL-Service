@@ -36,7 +36,7 @@ def fetch_source_rows(last_id: int) -> pd.DataFrame:
             )
 
         logger.info(
-            "fetched source rows",
+            "fetched source rows completed.",
             extra={"last_tms_id": last_id, "row_count": len(df)},
         )
         return df
