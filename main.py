@@ -1,4 +1,3 @@
-import time
 from backend_toolkit.monitoring.run_tracker import RunTracker
 from backend_toolkit.logger import get_logger
 from src.fetch import fetch_source_rows
