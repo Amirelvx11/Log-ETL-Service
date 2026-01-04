@@ -4,6 +4,7 @@ from src.fetch import fetch_source_rows
 from src.transform import transform_rows
 from src.insert import insert_rows, get_last_inserted_tms_id
 from src.config import USER_GUID
+from src.sync_update import sync_update_product_versions
 
 logger = get_logger(__name__)
 
@@ -20,6 +21,7 @@ def run_etl():
 
             batch_no = 0
             total_inserted = 0
+            updated = 0
 
             while True:
                 df = fetch_source_rows(last_id, current_run_id)
@@ -43,6 +45,12 @@ def run_etl():
                 transformed = transform_rows(df, USER_GUID)
                 inserted = insert_rows(transformed, current_run_id)
 
+                updated = sync_update_product_versions(
+                    from_id=last_id,
+                    to_id=max_id,
+                    run_id=current_run_id,
+                )
+
                 total_inserted += inserted
                 last_id = max_id
 
@@ -52,6 +60,7 @@ def run_etl():
                     "final_last_tms_log_id": last_id,
                     "batches": batch_no,
                     "rows_inserted": total_inserted,
+                    "updated_versions": updated,
                     "run_id": current_run_id
                 },
             )
