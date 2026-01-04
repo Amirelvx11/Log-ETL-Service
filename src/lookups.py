@@ -1,4 +1,3 @@
-import re
 import uuid
 from sqlalchemy import text
 from src.config import mssql_engine, USER_GUID
@@ -6,41 +5,45 @@ from backend_toolkit.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 _OS_CACHE: dict[str, str] = {}
 _MANAGER_CACHE: dict[str, str] = {}
-
 
 # ---------------- OS ---------------- #
 
 def normalize_os(value: str) -> tuple[str, str]:
     v = value.strip().upper()
 
+    # SP_BV1.1|42AE → store SP_BV1.1|42AE (EXACTLY)
     if "|" in v:
         return v, v
 
-    m = re.match(r"^(.*?)([A-Z])$", v)
-    if not m:
-        return v, v
+    # SP_CV6.6A → store as SP_CV6.6
+    if v.endswith("A"):
+        return v[:-1], v[:-1]
 
-    base, suffix = m.groups()
-    return (base, base) if suffix == "A" else (v, v)
+    # SP_CV2.8Y → store SP_CV2.8Y (EXACTLY)
+    # SP_CV2.7B → store SP_CV2.7B (EXACTLY)
+    return v, v
 
 
 def ensure_os_exists(raw: str) -> str | None:
     if not raw:
         return None
     
+    lookup, insert_val = normalize_os(raw)
+    key = lookup
+
+    if key in _OS_CACHE:
+        return _OS_CACHE[key]
+
     try:
-        lookup, insert_val = normalize_os(raw)
-        key = lookup.upper()
-
-        if key in _OS_CACHE:
-            return _OS_CACHE[key]
-
         with mssql_engine.begin() as conn:
             row = conn.execute(
-                text("SELECT Id FROM Hamon.mfu.OperatingSystem WHERE UPPER(Title) = :t"),
+                text("""
+                    SELECT Id
+                    FROM Hamon.mfu.OperatingSystem
+                    WHERE UPPER(Title) = :t
+                """),
                 {"t": lookup},
             ).fetchone()
 
@@ -55,7 +58,7 @@ def ensure_os_exists(raw: str) -> str | None:
                 text("""
                     INSERT INTO Hamon.mfu.OperatingSystem
                     (Id, Title, IsActive, CreatedBy,
-                    CreatedOn, ModifiedBy, ModifiedOn, OwnerId)
+                     CreatedOn, ModifiedBy, ModifiedOn, OwnerId)
                     VALUES
                     (:id, :title, 1, :u, GETDATE(), :u, GETDATE(), :u)
                 """),
@@ -79,7 +82,7 @@ def normalize_manager(value: str) -> str | None:
         return None
 
     value = value.strip().upper()
-    return value if value.startswith("V") else None
+    return value if value.startswith(("VS", "VC")) else None
 
 
 def ensure_manager_exists_exact(raw: str) -> str | None:
@@ -87,16 +90,14 @@ def ensure_manager_exists_exact(raw: str) -> str | None:
     if not normalized:
         return None
     
+    key = normalized.upper()
+
+    if key in _MANAGER_CACHE:
+        return _MANAGER_CACHE[key]
+
+    numeric = normalized.lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
     try:
-        key = normalized.upper()
-
-        if key in _MANAGER_CACHE:
-            return _MANAGER_CACHE[key]
-
-        numeric = re.sub(r"^[A-Z]+", "", normalized)
-
-        logger.info("creating manager version", extra={"title": raw})
-
         with mssql_engine.begin() as conn:
             row = conn.execute(
                 text("""
@@ -107,12 +108,14 @@ def ensure_manager_exists_exact(raw: str) -> str | None:
                         OR UPPER(Title) = 'VS' + :numeric
                         OR UPPER(Title) = 'VC' + :numeric
                 """),
-                {"raw": raw, "numeric": numeric},
+                {"raw": normalized, "numeric": numeric},
             ).fetchone()
 
             if row:
                 _MANAGER_CACHE[key] = row[0]
                 return row[0]
+
+            logger.info("creating manager version", extra={"title": normalized})
 
             new_id = str(uuid.uuid4()).upper()
             conn.execute(
@@ -123,7 +126,7 @@ def ensure_manager_exists_exact(raw: str) -> str | None:
                     VALUES
                     (:id, :title, 1, :u, GETDATE(), :u, GETDATE(), :u)
                 """),
-                {"id": new_id, "title": raw, "u": USER_GUID},
+                {"id": new_id, "title": normalized, "u": USER_GUID},
             )
 
             _MANAGER_CACHE[key] = new_id
@@ -132,6 +135,12 @@ def ensure_manager_exists_exact(raw: str) -> str | None:
     except Exception as exc:
         logger.error(
             "manager lookup failed",
-            extra={"raw": raw, "error": str(exc)},
+            extra={
+                "raw": raw,
+                "normalized": normalized,
+                "error": str(exc),
+            },
+            exc_info=True,
         )
         raise
+    
