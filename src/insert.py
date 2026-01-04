@@ -6,7 +6,7 @@ from backend_toolkit.logger import get_logger
 logger = get_logger(__name__)
 
 
-def insert_rows(df: pd.DataFrame) -> int:
+def insert_rows(df: pd.DataFrame, run_id: str) -> int:
     if df.empty:
         return 0
 
@@ -22,18 +22,18 @@ def insert_rows(df: pd.DataFrame) -> int:
                 method=None,
             )
 
-        logger.info("rows inserted", extra={"row_count": len(df)})
+        logger.info("rows inserted", extra={"row_count": len(df), "run_id": run_id})
         return len(df)
 
     except Exception as exc:
         logger.error(
             "insert failed",
-            extra={"row_count": len(df), "error": str(exc)},
+            extra={"row_count": len(df), "error": str(exc), "run_id": run_id},
         )
         raise
 
 
-def get_last_inserted_tms_id() -> int:
+def get_last_inserted_tms_id(run_id: str) -> int:
     try:
         with mssql_engine.connect() as conn:
             last_id = int(
@@ -42,13 +42,13 @@ def get_last_inserted_tms_id() -> int:
                 ).scalar_one()
             )
 
-        logger.info("last inserted tms id loaded", extra={"last_tms_id": last_id})
+        logger.debug("last inserted tms id loaded", extra={"last_tms_id": last_id, "run_id": run_id})
         return last_id
 
     except Exception as exc:
         logger.error(
             "failed to getting last tms_log_id",
-            extra={"error": str(exc)},
+            extra={"error": str(exc), "run_id": run_id},
         )
         raise
     

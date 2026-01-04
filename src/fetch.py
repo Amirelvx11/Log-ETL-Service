@@ -26,7 +26,7 @@ LIMIT :limit
 """)
 
 
-def fetch_source_rows(last_id: int) -> pd.DataFrame:
+def fetch_source_rows(last_id: int, run_id: str) -> pd.DataFrame:
     try:
         with mysql_engine.connect() as conn:
             df = pd.read_sql(
@@ -35,15 +35,15 @@ def fetch_source_rows(last_id: int) -> pd.DataFrame:
                 params={"last_id": last_id, "limit": BATCH_SIZE},
             )
 
-        logger.info(
+        logger.debug(
             "fetched source rows completed.",
-            extra={"last_tms_id": last_id, "row_count": len(df)},
+            extra={"last_tms_id": last_id, "row_count": len(df), "run_id": run_id},
         )
         return df
 
     except Exception as exc:
         logger.error(
             "failed fetching source rows",
-            extra={"last_tms_id": last_id, "error": str(exc)},
+            extra={"last_tms_id": last_id, "error": str(exc), "run_id": run_id},
         )
         raise
