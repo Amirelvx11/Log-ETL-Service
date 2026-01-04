@@ -18,7 +18,8 @@ def insert_rows(df: pd.DataFrame) -> int:
                 con=conn,
                 if_exists="append",
                 index=False,
-                chunksize=1000,
+                chunksize=500,
+                method=None,
             )
 
         logger.info("rows inserted", extra={"row_count": len(df)})
