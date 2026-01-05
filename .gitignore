@@ -62,7 +62,6 @@ docker-compose.*.yml
 Thumbs.db
 
 # CI / CD
-.pytest_cache/
 .cache/
 pip-log.txt
 
