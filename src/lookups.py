@@ -1,3 +1,4 @@
+import re
 import uuid
 from sqlalchemy import text
 from src.config import mssql_engine, USER_GUID
@@ -41,7 +42,7 @@ def ensure_os_exists(raw: str) -> str | None:
             row = conn.execute(
                 text("""
                     SELECT Id
-                    FROM Hamon.mfu.OperatingSystem
+                    FROM Hamon.mfu.OperatingSystem WITH (NOLOCK)
                     WHERE UPPER(Title) = :t
                 """),
                 {"t": lookup},
@@ -51,7 +52,7 @@ def ensure_os_exists(raw: str) -> str | None:
                 _OS_CACHE[key] = row[0]
                 return row[0]
 
-            logger.info("creating operating system", extra={"title": insert_val})
+            logger.debug("creating operating system", extra={"title": insert_val})
             
             new_id = str(uuid.uuid4()).upper()
             conn.execute(
@@ -95,13 +96,13 @@ def ensure_manager_exists_exact(raw: str) -> str | None:
     if key in _MANAGER_CACHE:
         return _MANAGER_CACHE[key]
 
-    numeric = normalized.lstrip("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    numeric = re.sub(r"^[A-Z]+", "", normalized)
 
     try:
         with mssql_engine.begin() as conn:
             row = conn.execute(
                 text("""
-                    SELECT Id FROM Hamon.mfu.Manager
+                    SELECT Id FROM Hamon.mfu.Manager WITH (NOLOCK)
                     WHERE
                         UPPER(Title) = :raw
                         OR UPPER(Title) = :numeric
@@ -115,7 +116,7 @@ def ensure_manager_exists_exact(raw: str) -> str | None:
                 _MANAGER_CACHE[key] = row[0]
                 return row[0]
 
-            logger.info("creating manager version", extra={"title": normalized})
+            logger.debug("creating manager version", extra={"title": normalized})
 
             new_id = str(uuid.uuid4()).upper()
             conn.execute(
