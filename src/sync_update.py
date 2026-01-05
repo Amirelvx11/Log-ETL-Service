@@ -15,7 +15,7 @@ WITH LatestDeviceLog AS (
             PARTITION BY dl.Tusn
             ORDER BY dl.TmsLogId DESC
         ) AS rn
-    FROM Hamon.mfu.DeviceLog dl
+    FROM Hamon.mfu.DeviceLog dl WITH (NOLOCK)
     WHERE dl.TmsLogId > :from_id
       AND dl.TmsLogId <= :to_id
       AND dl.Tusn IS NOT NULL
@@ -29,7 +29,7 @@ SET
     p.ManagerVersionId = ld.ManagerVersionId,
     p.ModifiedOn       = GETDATE(),
     p.ModifiedBy       = :modified_by
-FROM Hamon.mfu.Product p
+FROM Hamon.mfu.Product p WITH (NOLOCK)
 JOIN LatestDeviceLog ld
     ON p.Tusn = ld.Tusn
 WHERE ld.rn = 1
