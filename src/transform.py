@@ -59,14 +59,16 @@ def transform_rows(df: pd.DataFrame, user_guid: str) -> pd.DataFrame:
                     "unknown request_subject value",
                     extra={"value": r.request_subject}
                 )
-                           
+            
+            created_on = _parse_datetime(r.start_time)
+                                       
             row = {
                     "Id": str(uuid.uuid4()).upper(),
                     "IsActive": 1,
                     "CreatedBy": user_guid,
-                    "CreatedOn": _parse_datetime(r.start_time),
+                    "CreatedOn": created_on,
                     "ModifiedBy": user_guid,
-                    "ModifiedOn": _parse_datetime(r.start_time),
+                    "ModifiedOn": created_on,
                     "OwnerId": user_guid,
                     "TmsLogId": int(r.id),
                     "Tusn": r.serial,
