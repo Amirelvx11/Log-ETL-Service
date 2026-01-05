@@ -16,7 +16,7 @@ TARGET_DB = _require_env("TARGET_DB")
 USER_GUID = _require_env("USER_GUID")
 
 # OPTIONAL (ensure that no limitation based on mssql and your RAM for insert)
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "10000")) 
+BATCH_SIZE = min(int(os.getenv("BATCH_SIZE", "10000")), 50_000)
 
 # Engines (MySQL-source and MSSQL-target)
 mysql_engine = create_engine(
@@ -32,6 +32,7 @@ mssql_engine = create_engine(
     max_overflow=5,
     pool_timeout=30,
     pool_recycle=3600,
+    isolation_level="READ COMMITTED",
 )
 
 
