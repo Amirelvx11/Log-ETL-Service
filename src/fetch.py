@@ -28,7 +28,7 @@ LIMIT :limit
 
 def fetch_source_rows(last_id: int, run_id: str) -> pd.DataFrame:
     try:
-        with mysql_engine.connect() as conn:
+        with mysql_engine.begin() as conn:
             df = pd.read_sql(
                 FETCH_SQL,
                 conn,
