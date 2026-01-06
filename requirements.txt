@@ -15,4 +15,4 @@ six==1.17.0
 SQLAlchemy==2.0.45
 typing_extensions==4.15.0
 tzdata==2025.3
-backend-production-toolkit @ git+https://github.com/Amirelvx11/backend-production-toolkit.git@v0.2.0
+backend-production-toolkit @ git+https://github.com/Amirelvx11/backend-production-toolkit.git@v0.1.1

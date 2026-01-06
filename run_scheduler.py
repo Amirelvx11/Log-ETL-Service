@@ -1,6 +1,5 @@
 import os
 import time
-import socket
 from datetime import datetime, timedelta, time as dt_time
 from zoneinfo import ZoneInfo
 from backend_toolkit.logger import get_logger
@@ -60,7 +59,6 @@ def main() -> None:
             "timezone": "Asia/Tehran",
             "window": "22:00-08:00",
             "interval_seconds": CHECK_INTERVAL_SECONDS,
-            "hostname": socket.gethostname(),
         },
     )
 
@@ -72,7 +70,7 @@ def main() -> None:
                 logger.warning("ETL still running, skipping tick")
                 time.sleep(SLEEP_TICK_SECONDS)
                 continue
-            
+
             if within_allowed_window(now) and allowed_by_interval(now):
                 logger.info(
                     "Starting Log-ETL run",
