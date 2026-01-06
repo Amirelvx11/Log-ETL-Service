@@ -5,12 +5,15 @@ WORKDIR /build
 ENV PIP_NO_CACHE_DIR=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc build-essential pkg-config unixodbc-dev default-libmysqlclient-dev \
+    git gcc build-essential pkg-config unixodbc-dev default-libmysqlclient-dev \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN python -m pip install --upgrade pip \
- && pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+RUN pip wheel \
+    --no-cache-dir \
+    --wheel-dir /wheels \
+    --default-timeout=120 \
+    -r requirements.txt
 
 # Runtime Stage
 FROM python:3.12-slim
