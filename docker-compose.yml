@@ -4,66 +4,20 @@ services:
     image: log-etl-service
     build: .
     restart: always
-
     env_file:
       - .env
-
     networks:
       - logs_net
-
     volumes:
       - ./logs:/var/log
-
     command: ["python", "/app/run_scheduler.py"]
 
     healthcheck:
-      test:
-        - CMD-SHELL
-        - |
-          python - << 'EOF'
-          import os
-          import sys
-          from datetime import datetime, timedelta
-          from zoneinfo import ZoneInfo
-          from pymongo import MongoClient
-
-          REQUIRED = ["MONGO_URI", "MONGO_DB", "MONGO_COLLECTION"]
-          for r in REQUIRED:
-              if not os.getenv(r):
-                  sys.exit(1)
-
-          tz = ZoneInfo("Asia/Tehran")
-          cutoff = datetime.now(tz) - timedelta(minutes=60)
-
-          client = MongoClient(
-              os.environ["MONGO_URI"],
-              serverSelectionTimeoutMS=2000,
-          )
-          client.admin.command("ping")
-
-          col = client[
-              os.environ["MONGO_DB"]
-          ][
-              os.environ["MONGO_COLLECTION"]
-          ]
-
-          doc = col.find_one(
-              {
-                  "service": "log-etl",
-                  "type": "heartbeat",
-                  "timestamp": {"$gte": cutoff},
-              },
-              sort=[("timestamp", -1)],
-          )
-
-          sys.exit(0 if doc else 1)
-          EOF
-
+      test: ["CMD", "python", "-m", "healthcheck.healthcheck"]
       interval: 5m
       timeout: 10s
       retries: 3
       start_period: 10m
-
 
 networks:
   logs_net:
