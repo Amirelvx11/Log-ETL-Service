@@ -1,6 +1,7 @@
 import os
 import sys
-import pyodbc
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime, timedelta, time as dt_time
 from zoneinfo import ZoneInfo
 from pymongo import MongoClient
@@ -90,7 +91,7 @@ def main() -> None:
         HEALTHY_MARKERS = (
             "scheduler",
             "log-etl",
-            "Starting",
+            "starting",
 	    "started",
             "finished",
             "running",
@@ -103,11 +104,25 @@ def main() -> None:
             sys.exit(1)
 
     # --- DB Connection Check ---
-    with pyodbc.connect(os.environ["SOURCE_DB"], timeout=3):
-        pass
+    try:
+        engine1 = create_engine(
+            os.environ["SOURCE_DB"],
+            pool_pre_ping=True,
+            pool_timeout=3,
+        )
+        with engine1.connect() as conn:
+            conn.execute(text("SELECT 1"))
 
-    with pyodbc.connect(os.environ["TARGET_DB"], timeout=3):
-        pass
+        engine2 = create_engine(
+            os.environ["TARGET_DB"],
+            pool_pre_ping=True,
+            pool_timeout=3,
+        )
+        with engine2.connect() as conn:
+            conn.execute(text("SELECT 1"))
+
+    except SQLAlchemyError as e:
+        raise RuntimeError(f"DB check failed: {e}") from e
 
     sys.exit(0)
 
