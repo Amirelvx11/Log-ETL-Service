@@ -9,7 +9,7 @@ services:
     networks:
       - logs_net
     volumes:
-      - ./logs:/var/log
+      - log-etl-service_logs:/var/log
     command: ["python", "/app/run_scheduler.py"]
 
     healthcheck:
