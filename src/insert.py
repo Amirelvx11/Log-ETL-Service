@@ -3,7 +3,7 @@ from sqlalchemy import text
 from src.config import mssql_engine
 from backend_toolkit.logger import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("insert")
 
 
 def insert_rows(df: pd.DataFrame, run_id: str) -> int:

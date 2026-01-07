@@ -7,7 +7,7 @@ from src.config import COMM_MODE_MAP, REQUEST_TYPE_MAP, PART_ID_BY_PREFIX
 from src.lookups import ensure_os_exists, ensure_manager_exists_exact
 from backend_toolkit.logger import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("transform")
 
 
 #-----------------------HELPER METHODS-----------------------#

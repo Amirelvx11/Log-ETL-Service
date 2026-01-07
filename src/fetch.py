@@ -3,7 +3,7 @@ from sqlalchemy import text
 from src.config import mysql_engine, BATCH_SIZE
 from backend_toolkit.logger import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("fetch")
 
 FETCH_SQL = text("""
 SELECT

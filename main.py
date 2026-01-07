@@ -6,7 +6,7 @@ from src.insert import insert_rows, get_last_inserted_tms_id
 from src.config import USER_GUID
 from src.sync_update import sync_update_product_versions
 
-logger = get_logger(__name__)
+logger = get_logger("etl")
 
 def run_etl():
     with RunTracker("device-log-etl") as run:

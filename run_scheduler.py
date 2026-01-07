@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from backend_toolkit.logger import get_logger
 from main import run_etl
 
-logger = get_logger("log-etl-scheduler")
+logger = get_logger("scheduler")
 
 IRAN = ZoneInfo("Asia/Tehran")
 

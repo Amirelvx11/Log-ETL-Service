@@ -4,7 +4,7 @@ from sqlalchemy import text
 from src.config import mssql_engine, USER_GUID
 from backend_toolkit.logger import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger("lookups")
 
 _OS_CACHE: dict[str, str] = {}
 _MANAGER_CACHE: dict[str, str] = {}

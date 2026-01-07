@@ -3,7 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from backend_toolkit.logger import get_logger
 from src.config import mssql_engine, USER_GUID
 
-logger = get_logger(__name__)
+logger = get_logger("sync_update")
 
 SYNC_SQL = text("""
 WITH LatestDeviceLog AS (
