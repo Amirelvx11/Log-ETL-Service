@@ -12,10 +12,22 @@ logger = get_logger("transform")
 
 #-----------------------HELPER METHODS-----------------------#
 
-def _parse_datetime(value) -> datetime:
+def _parse_datetime(value) -> datetime | None:
+    if value is None:
+        return None
+
     if isinstance(value, datetime):
-        return value
-    return datetime.strptime(str(value), "%Y-%m-%d %H:%M:%S")
+        return value.replace(tzinfo=None, microsecond=0)
+
+    s = str(value).strip()
+
+    if "." in s:
+        try:
+            return datetime.strptime(s, "%Y-%m-%d %H:%M:%S.%f")
+        except ValueError:
+            pass
+
+    return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
 
 
 def _resolve_part_id(terminal: str | None) -> str | None:
