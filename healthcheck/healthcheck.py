@@ -92,7 +92,7 @@ def main() -> None:
             "scheduler",
             "log-etl",
             "starting",
-	    "started",
+	        "started",
             "finished",
             "running",
             "inserted",
