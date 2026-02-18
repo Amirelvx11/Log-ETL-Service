@@ -9,7 +9,7 @@ services:
     networks:
       - logs_net
     volumes:
-      - log-etl-service_logs:/var/log
+      - log-etl-service-logs:/var/log
     command: ["python", "/app/run_scheduler.py"]
 
     healthcheck:
@@ -20,9 +20,8 @@ services:
       start_period: 10m
 
 volumes:
-  log-etl-service_logs:
-    name: log-etl-service_logs
-    external: true
+  log-etl-service-logs:
+    name: log-etl-service-logs
 
 networks:
   logs_net:
