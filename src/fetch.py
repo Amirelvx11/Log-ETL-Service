@@ -26,7 +26,7 @@ LIMIT :limit
 """)
 
 
-def fetch_source_rows(last_id: int, run_id: str) -> pd.DataFrame:
+def fetch_source_rows(last_id: int) -> pd.DataFrame:
     try:
         with mysql_engine.begin() as conn:
             df = pd.read_sql(
@@ -37,13 +37,13 @@ def fetch_source_rows(last_id: int, run_id: str) -> pd.DataFrame:
 
         logger.debug(
             "fetched source rows completed.",
-            extra={"last_tms_id": last_id, "row_count": len(df), "run_id": run_id},
+            extra={"last_tms_id": last_id, "row_count": len(df)},
         )
         return df
 
     except Exception as exc:
         logger.error(
             "failed fetching source rows",
-            extra={"last_tms_id": last_id, "error": str(exc), "run_id": run_id},
+            extra={"last_tms_id": last_id, "error": str(exc)},
         )
         raise

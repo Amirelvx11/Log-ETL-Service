@@ -46,7 +46,6 @@ def sync_update_product_versions(
     *,
     from_id: int,
     to_id: int,
-    run_id: str,
 ) -> int:
     """
     Update Product OS/Manager versions using ONLY logs inserted
@@ -75,7 +74,6 @@ def sync_update_product_versions(
                 "from_tms_log_id": from_id + 1,
                 "to_tms_log_id": to_id,
                 "rows_updated": affected,
-                "run_id": run_id,
             },
         )
 
@@ -88,7 +86,6 @@ def sync_update_product_versions(
                 "from_tms_log_id": from_id + 1,
                 "to_tms_log_id": to_id,
                 "error": str(exc),
-                "run_id": run_id,
             },
             exc_info=True,
         )
